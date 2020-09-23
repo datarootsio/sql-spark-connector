@@ -3,7 +3,7 @@ package com.microsoft.sqlserver.jdbc.spark
 import java.sql.{ResultSetMetaData, SQLException}
 
 import com.microsoft.sqlserver.jdbc.spark.BulkCopyUtils.{getDBNameFromURL, savePartition}
-import org.apache.spark.internal.Logging
+import com.microsoft.sqlserver.jdbc.spark.Logging
 import org.apache.spark.sql.{DataFrame, Row}
 
 /**
@@ -15,21 +15,21 @@ object BestEffortDataPoolStrategy extends DataIOStrategy with Logging {
   /**
    * write finds the datapool host names, maps the hostnames to respective exectuors,
    * creates connection urls and delegates control to the executors to start the writing process.
-    * The Design of interacting with the data pools proceeds as follows
-    * 1. Use Sql Server Master instance to create the data source and external table.
-    * Note , per data pool design external tables cannot be created in the 'master' database and external table
-    * creation is data base altering and that cannot be done. So the external table must be created in
-    * user specified database only.
-    * 2. Find the data pool nodes. This uses a utility getDataPoolNodeList
-    * 3. Use the returned node hostnames to construct URL and create connections to each of the
-    * data nodes. Pass this connection to each of the executors to write their partition
-    * of the dataframe.
-    */
+   * The Design of interacting with the data pools proceeds as follows
+   * 1. Use Sql Server Master instance to create the data source and external table.
+   * Note , per data pool design external tables cannot be created in the 'master' database and external table
+   * creation is data base altering and that cannot be done. So the external table must be created in
+   * user specified database only.
+   * 2. Find the data pool nodes. This uses a utility getDataPoolNodeList
+   * 3. Use the returned node hostnames to construct URL and create connections to each of the
+   * data nodes. Pass this connection to each of the executors to write their partition
+   * of the dataframe.
+   */
   def write(
-        df: DataFrame,
-        colMetaData: Array[ColumnMetadata],
-        options: SQLServerBulkJdbcOptions,
-        appId: String): Unit = {
+             df: DataFrame,
+             colMetaData: Array[ColumnMetadata],
+             options: SQLServerBulkJdbcOptions,
+             appId: String): Unit = {
     logInfo("write : best effort  write to datapools called")
     //val dfColMetadata: Array[ColumnMetadata] = getColMetadataMap(metadata)
     val dfColMetadata = colMetaData
@@ -45,7 +45,7 @@ object BestEffortDataPoolStrategy extends DataIOStrategy with Logging {
     logDebug("write:user URL " + s"$dbname")
     val results = df.rdd.mapPartitionsWithIndex(
       (index, iterator) => {
-         options.dataPoolDistPolicy match {
+        options.dataPoolDistPolicy match {
           case "ROUND_ROBIN" => {
             val hostname = hostnames(index % hostnames.length)
             logInfo(s"write: partition index $index to host $hostname " +
@@ -59,7 +59,7 @@ object BestEffortDataPoolStrategy extends DataIOStrategy with Logging {
                 s"to host $hostname with distribution policy REPLICATED")
               saveToDataPoolNode(itr,hostname,options, dfColMetadata)
             })
-         }
+          }
           case _ => {
             throw new SQLException(
               s""" Invalid value in dataPoolDistPolicy ${options.dataPoolDistPolicy}  .
@@ -77,10 +77,10 @@ object BestEffortDataPoolStrategy extends DataIOStrategy with Logging {
    * and calls saves parition to save the rows to the data pool node.
    */
   def saveToDataPoolNode(
-        iterator: Iterator[Row],
-        hostname:String,
-        options:SQLServerBulkJdbcOptions,
-        dfColMetadata:Array[ColumnMetadata]) : Unit = {
+                          iterator: Iterator[Row],
+                          hostname:String,
+                          options:SQLServerBulkJdbcOptions,
+                          dfColMetadata:Array[ColumnMetadata]) : Unit = {
     logInfo(s"write: to hostname $hostname")
     val url = DataPoolUtils.createDataPoolURL(hostname, options)
     val newOptions = new SQLServerBulkJdbcOptions(options.parameters + ("url" -> url))
@@ -96,8 +96,8 @@ object BestEffortDataPoolStrategy extends DataIOStrategy with Logging {
    * Refer : https://www.scala-lang.org/api/2.11.2/index.html#scala.collection.Iterator
    */
   def getHostIteratorMap(
-      itr:Iterator[Row],
-      hostnames:List[String]) : Map[String,Iterator[Row]] ={
+                          itr:Iterator[Row],
+                          hostnames:List[String]) : Map[String,Iterator[Row]] ={
     var host_itr_map =  scala.collection.mutable.Map[String,Iterator[Row]]()
     var itr_orignal = itr
     hostnames.foreach(hostname => {

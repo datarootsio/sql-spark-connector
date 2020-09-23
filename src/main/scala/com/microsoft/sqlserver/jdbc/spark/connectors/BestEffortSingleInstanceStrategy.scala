@@ -3,7 +3,7 @@ package com.microsoft.sqlserver.jdbc.spark
 import java.sql.ResultSetMetaData
 
 import com.microsoft.sqlserver.jdbc.spark.BulkCopyUtils.{savePartition}
-import org.apache.spark.internal.Logging
+import com.microsoft.sqlserver.jdbc.spark.Logging
 import org.apache.spark.sql.{DataFrame, Row}
 
 /**
@@ -19,14 +19,14 @@ object SingleInstanceWriteStrategies extends DataIOStrategy with Logging {
    * and this may result in duplicates
    */
   def write(
-         df: DataFrame,
-         colMetaData: Array[ColumnMetadata],
-         options: SQLServerBulkJdbcOptions,
-         appId: String): Unit = {
-      logInfo("write : best effort write to single instance called")
-      //val dfColMetadata: Array[ColumnMetadata] = getColMetadataMap(metadata)
-      val dfColMetadata = colMetaData
-      df.rdd.foreachPartition(iterator =>
-        savePartition(iterator, options.dbtable, dfColMetadata, options))
-    }
+             df: DataFrame,
+             colMetaData: Array[ColumnMetadata],
+             options: SQLServerBulkJdbcOptions,
+             appId: String): Unit = {
+    logInfo("write : best effort write to single instance called")
+    //val dfColMetadata: Array[ColumnMetadata] = getColMetadataMap(metadata)
+    val dfColMetadata = colMetaData
+    df.rdd.foreachPartition(iterator =>
+      savePartition(iterator, options.dbtable, dfColMetadata, options))
+  }
 }

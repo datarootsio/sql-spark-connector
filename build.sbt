@@ -4,21 +4,21 @@ organization := "com.microsoft.sqlserver.jdbc.spark"
 
 version := "1.0.0"
 
-scalaVersion := "2.11.12"
+crossScalaVersions := Seq("2.12.10", "2.11.12")
+scalaVersion := crossScalaVersions.value.head
 
-val sparkVersion = "2.4.6"
-
+val sparkVersion = sys.props.get("spark.version").getOrElse("3.0.1")
 javacOptions ++= Seq("-source", "1.8", "-target", "1.8", "-Xlint")
 
 libraryDependencies ++= Seq(
   "org.apache.spark" %% "spark-sql" % sparkVersion % "provided",
   // Spark Testing Utilities
   "org.apache.spark" %% "spark-core" % sparkVersion % "test" classifier
-      "tests",
+    "tests",
   "org.apache.spark" %% "spark-sql" % sparkVersion% "test" classifier
-      "tests",
+    "tests",
   "org.apache.spark" %% "spark-catalyst" % sparkVersion % "test" classifier
-      "tests",
+    "tests",
   "org.scalatest" %% "scalatest" % "3.0.5" % "test",
   "com.novocode" % "junit-interface" % "0.11" % "test",
 

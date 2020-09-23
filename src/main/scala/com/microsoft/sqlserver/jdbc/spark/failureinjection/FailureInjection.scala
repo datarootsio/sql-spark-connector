@@ -1,7 +1,7 @@
 package com.microsoft.sqlserver.jdbc.spark
 
 import com.microsoft.sqlserver.jdbc.spark.DataPoolUtils.logDebug
-import org.apache.spark.internal.Logging
+import com.microsoft.sqlserver.jdbc.spark.Logging
 
 /**
  * Failure injection to to randomly restart the executors.
@@ -22,7 +22,7 @@ object FailureInjection extends Logging {
       logDebug(s"FailureInjection: testDataIdempotency is set to True")
       logDebug(s"FailureInjection: seed used is $seed")
 
-      val nextRandom = r. nextFloat()
+      val nextRandom = r.nextFloat()
       logDebug(s"FailureInjection: Generated random number is $nextRandom")
       if (nextRandom <= simulatedFailureRate) {
         logDebug("FailureInjection: Forced a crash")

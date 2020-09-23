@@ -4,7 +4,7 @@ import org.apache.spark.sql.{DataFrame, Row, SQLContext, SaveMode}
 import java.sql.{Connection, ResultSet, ResultSetMetaData, SQLException}
 
 import com.microsoft.sqlserver.jdbc.spark.BulkCopyUtils.{getColMetaData, getEmptyResultSet, mssqlTruncateTable}
-import org.apache.spark.internal.Logging
+import com.microsoft.sqlserver.jdbc.spark.Logging
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils.tableExists
 
@@ -25,7 +25,7 @@ import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils.tableExists
  * Implementation is TBC as of now.
  *
  */
- abstract class Connector extends Logging {
+abstract class Connector extends Logging {
   /**
    * write implements a pattern for supported SaveModes.Each supported SaveMode implements a defined pattern
    * for consistency e.g. Overwrite mode table is dropped or trucated based on isTruncateOption.
@@ -38,11 +38,11 @@ import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils.tableExists
    */
 
   final def write(
-       sqlContext: SQLContext,
-       mode: SaveMode,
-       df: DataFrame,
-       conn: Connection,
-       options: SQLServerBulkJdbcOptions ): Unit = {
+                   sqlContext: SQLContext,
+                   mode: SaveMode,
+                   df: DataFrame,
+                   conn: Connection,
+                   options: SQLServerBulkJdbcOptions ): Unit = {
     logDebug("write : Entered")
     try {
       if (tableExists(conn, options)) {
@@ -92,10 +92,10 @@ import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils.tableExists
    * @param appId of the spark application.
    */
   def writeInParallel(
-        df: DataFrame,
-        colMetaData: Array[ColumnMetadata],
-        options: SQLServerBulkJdbcOptions,
-        appId: String): Unit
+                       df: DataFrame,
+                       colMetaData: Array[ColumnMetadata],
+                       options: SQLServerBulkJdbcOptions,
+                       appId: String): Unit
 
   /**
    * createTable interface. Respective connector implementations can override this to implement specific functionality
@@ -105,9 +105,9 @@ import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils.tableExists
    * @param options user provided options.
    */
   def createTable(
-        conn: Connection,
-        df: DataFrame,
-        options: SQLServerBulkJdbcOptions) : Unit
+                   conn: Connection,
+                   df: DataFrame,
+                   options: SQLServerBulkJdbcOptions) : Unit
 
   /**
    * dropTable interface. Respective connector implementations can override this to implement specific functionality
@@ -117,7 +117,7 @@ import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils.tableExists
    * @param options user provided options.
    */
   def dropTable(
-        conn: Connection,
-        dbtable: String,
-        options: JDBCOptions): Unit
+                 conn: Connection,
+                 dbtable: String,
+                 options: JDBCOptions): Unit
 }
