@@ -292,7 +292,11 @@ object BulkCopyUtils extends Logging {
           zip df.schema.fieldNames.toList).toMap
         val dfCols = df.schema
 
+        logDebug(s"Available DF columns DF: ${dfCols.fieldNames.mkString(", ")}")
+
         val tableCols = getSchema(rs, JdbcDialects.get(url))
+        logDebug(s"Available table columns: ${tableCols.mkString(", ")}")
+
         val computedCols = getComputedCols(conn, dbtable)
 
         val prefix = "Spark Dataframe and SQL Server table have differing"
@@ -331,6 +335,7 @@ object BulkCopyUtils extends Logging {
                         s"""${prefix} column names '${tableColName}' and
                         '${dfColName}' at column index ${i} (case sensitive)""")
                 } else {
+                    logDebug(s"Matching table column ${tableColName.toLowerCase()}")
                     dfFieldIndex = dfCols.fieldIndex(dfColCaseMap(tableColName.toLowerCase()))
                     dfColName = dfCols(dfFieldIndex).name
                     assertIfCheckEnabled(
