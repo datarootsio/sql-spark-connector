@@ -319,67 +319,69 @@ object BulkCopyUtils extends Logging {
 
         for (i <- 0 to tableCols.length-1) {
             val tableColName = tableCols(i).name
-            var dfFieldIndex = -1
-            var isAutoIncrement = false
-            if (computedCols.contains(tableColName)) {
-                // set dfFieldIndex = -1 and isAutoIncrement = true for all computed columns to skip bulk copy mapping
-                isAutoIncrement = true
-                logDebug(s"skipping computed col index $i col name $tableColName dfFieldIndex $dfFieldIndex")
-            }else{
-                var dfColName:String = ""
-                if (isCaseSensitive) {
-                    dfFieldIndex = dfCols.fieldIndex(tableColName)
-                    dfColName = dfCols(dfFieldIndex).name
-                    assertIfCheckEnabled(
-                        tableColName == dfColName, strictSchemaCheck,
-                        s"""${prefix} column names '${tableColName}' and
-                        '${dfColName}' at column index ${i} (case sensitive)""")
+            if (dfCols.fieldNames.contains(tableColName)) {
+                var dfFieldIndex = -1
+                var isAutoIncrement = false
+                if (computedCols.contains(tableColName)) {
+                    // set dfFieldIndex = -1 and isAutoIncrement = true for all computed columns to skip bulk copy mapping
+                    isAutoIncrement = true
+                    logDebug(s"skipping computed col index $i col name $tableColName dfFieldIndex $dfFieldIndex")
                 } else {
-                    logDebug(s"Matching table column ${tableColName.toLowerCase()}")
-                    dfFieldIndex = dfCols.fieldIndex(dfColCaseMap(tableColName.toLowerCase()))
-                    dfColName = dfCols(dfFieldIndex).name
-                    assertIfCheckEnabled(
-                        tableColName.toLowerCase() == dfColName.toLowerCase(),
-                        strictSchemaCheck,
-                        s"""${prefix} column names '${tableColName}' and
+                    var dfColName: String = ""
+                    if (isCaseSensitive) {
+                        dfFieldIndex = dfCols.fieldIndex(tableColName)
+                        dfColName = dfCols(dfFieldIndex).name
+                        assertIfCheckEnabled(
+                            tableColName == dfColName, strictSchemaCheck,
+                            s"""${prefix} column names '${tableColName}' and
+                        '${dfColName}' at column index ${i} (case sensitive)""")
+                    } else {
+                        logDebug(s"Matching table column ${tableColName.toLowerCase()}")
+                        dfFieldIndex = dfCols.fieldIndex(dfColCaseMap(tableColName.toLowerCase()))
+                        dfColName = dfCols(dfFieldIndex).name
+                        assertIfCheckEnabled(
+                            tableColName.toLowerCase() == dfColName.toLowerCase(),
+                            strictSchemaCheck,
+                            s"""${prefix} column names '${tableColName}' and
                         '${dfColName}' at column index ${i} (case insensitive)""")
-                }
+                    }
 
-                logDebug(s"matching Df column index $dfFieldIndex datatype ${dfCols(dfFieldIndex).dataType} " +
-                    s"to table col index $i datatype ${tableCols(i).dataType}")
-                if(dfCols(dfFieldIndex).dataType == ByteType && tableCols(i).dataType == ShortType) {
-                    // TinyInt translates to spark ShortType. Refer https://github.com/apache/spark/pull/27172
-                    // Here we handle a case of writing a ByteType to SQL when Spark Core says that its a ShortType.
-                    // We can write a ByteType to ShortType and thus we pass that type checking.
-                    logDebug(s"Passing valid translation of ByteType to ShortType")
-                }
-                else {
+                    logDebug(s"matching Df column index $dfFieldIndex datatype ${dfCols(dfFieldIndex).dataType} " +
+                      s"to table col index $i datatype ${tableCols(i).dataType}")
+                    if (dfCols(dfFieldIndex).dataType == ByteType && tableCols(i).dataType == ShortType) {
+                        // TinyInt translates to spark ShortType. Refer https://github.com/apache/spark/pull/27172
+                        // Here we handle a case of writing a ByteType to SQL when Spark Core says that its a ShortType.
+                        // We can write a ByteType to ShortType and thus we pass that type checking.
+                        logDebug(s"Passing valid translation of ByteType to ShortType")
+                    }
+                    else {
+                        assertIfCheckEnabled(
+                            dfCols(dfFieldIndex).dataType == tableCols(i).dataType,
+                            strictSchemaCheck,
+                            s"${prefix} column data types at column index ${i}." +
+                              s" DF col ${dfColName} dataType ${dfCols(dfFieldIndex).dataType} " +
+                              s" Table col ${tableColName} dataType ${tableCols(i).dataType} ")
+                    }
                     assertIfCheckEnabled(
-                        dfCols(dfFieldIndex).dataType == tableCols(i).dataType,
+                        dfCols(dfFieldIndex).nullable == tableCols(i).nullable,
                         strictSchemaCheck,
-                        s"${prefix} column data types at column index ${i}." +
-                        s" DF col ${dfColName} dataType ${dfCols(dfFieldIndex).dataType} " +
-                        s" Table col ${tableColName} dataType ${tableCols(i).dataType} ")
+                        s"${prefix} column nullable configurations at column index ${i}" +
+                          s" DF col ${dfColName} nullable config is ${dfCols(dfFieldIndex).nullable} " +
+                          s" Table col ${tableColName} nullable config is ${tableCols(i).nullable}")
                 }
-                assertIfCheckEnabled(
-                    dfCols(dfFieldIndex).nullable == tableCols(i).nullable,
-                    strictSchemaCheck,
-                    s"${prefix} column nullable configurations at column index ${i}" +
-                        s" DF col ${dfColName} nullable config is ${dfCols(dfFieldIndex).nullable} " +
-                        s" Table col ${tableColName} nullable config is ${tableCols(i).nullable}")
-            }
 
-            // Schema check passed for element, Create ColMetaData
-            result(i) = new ColumnMetadata(
-                rs.getMetaData().getColumnName(i+1),
-                rs.getMetaData().getColumnType(i+1),
-                rs.getMetaData().getPrecision(i+1),
-                rs.getMetaData().getScale(i+1),
-                isAutoIncrement,
-                dfFieldIndex
-            )
+                // Schema check passed for element, Create ColMetaData
+                result(i) = new ColumnMetadata(
+                    rs.getMetaData().getColumnName(i + 1),
+                    rs.getMetaData().getColumnType(i + 1),
+                    rs.getMetaData().getPrecision(i + 1),
+                    rs.getMetaData().getScale(i + 1),
+                    isAutoIncrement,
+                    dfFieldIndex
+                )
+            }
         }
-        result
+        result.filter(_ != null)
     }
 
     /**
